@@ -49,8 +49,10 @@ interface BookDao {
         SELECT * FROM books
         WHERE status = 'COMPLETED'
         AND archivedYear IS NULL
-        AND endDate IS NOT NULL
-        AND endDate < :startOfCurrentYear
+        AND (
+            (endDate IS NOT NULL AND endDate < :startOfCurrentYear)
+            OR (endDate IS NULL AND createdAt < :startOfCurrentYear)
+        )
     """)
     suspend fun getCompletedBooksBeforeYear(startOfCurrentYear: Long): List<Book>
 

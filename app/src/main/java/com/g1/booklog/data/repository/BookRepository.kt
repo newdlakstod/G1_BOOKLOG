@@ -51,7 +51,7 @@ class BookRepository(
         val toArchive = bookDao.getCompletedBooksBeforeYear(startOfCurrentYear)
         toArchive.forEach { book ->
             val yearOfCompletion = Calendar.getInstance().apply {
-                timeInMillis = book.endDate!!
+                timeInMillis = book.endDate ?: book.createdAt
             }.get(Calendar.YEAR)
             bookDao.updateBook(book.copy(archivedYear = yearOfCompletion))
         }

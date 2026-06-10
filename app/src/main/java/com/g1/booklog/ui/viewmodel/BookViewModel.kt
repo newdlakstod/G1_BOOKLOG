@@ -176,6 +176,7 @@ class BookViewModel(
     }
 
     fun addBookFromSearch(item: GoogleBookItem, status: ReadingStatus) = viewModelScope.launch {
+        val now = System.currentTimeMillis()
         repository.insertBook(
             Book(
                 title = item.getTitle(),
@@ -185,7 +186,9 @@ class BookViewModel(
                 totalPages = item.getPageCount(),
                 isbn = item.getIsbn13(),
                 coverImageUrl = item.getThumbnail(),
-                status = status
+                status = status,
+                startDate = if (status == ReadingStatus.READING || status == ReadingStatus.COMPLETED) now else null,
+                endDate = if (status == ReadingStatus.COMPLETED) now else null
             )
         )
     }

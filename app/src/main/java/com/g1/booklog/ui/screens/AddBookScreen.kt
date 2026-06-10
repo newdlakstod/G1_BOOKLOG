@@ -116,8 +116,10 @@ fun BookFormScreen(
                         titleError = bookTitle.isBlank()
                         authorError = author.isBlank()
                         if (!titleError && !authorError) {
+                            val now = System.currentTimeMillis()
+                            val base = initialBook ?: Book(title = "", author = "")
                             onSave(
-                                (initialBook ?: Book(title = "", author = "")).copy(
+                                base.copy(
                                     title = bookTitle.trim(),
                                     author = author.trim(),
                                     publisher = publisher.trim(),
@@ -126,7 +128,17 @@ fun BookFormScreen(
                                     genre = selectedGenre,
                                     status = selectedStatus,
                                     isbn = isbn.trim(),
-                                    coverImageUrl = coverImageUrl
+                                    coverImageUrl = coverImageUrl,
+                                    startDate = when {
+                                        base.startDate != null -> base.startDate
+                                        selectedStatus == ReadingStatus.READING || selectedStatus == ReadingStatus.COMPLETED -> now
+                                        else -> null
+                                    },
+                                    endDate = when {
+                                        base.endDate != null -> base.endDate
+                                        selectedStatus == ReadingStatus.COMPLETED -> now
+                                        else -> null
+                                    }
                                 )
                             )
                         }
