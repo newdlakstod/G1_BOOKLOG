@@ -57,7 +57,7 @@ object GoogleBooksApi {
                     )
                 }
                 .addInterceptor(HttpLoggingInterceptor().apply {
-                    level = HttpLoggingInterceptor.Level.BASIC
+                    level = if (com.g1.booklog.BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC else HttpLoggingInterceptor.Level.NONE
                 })
                 .build()
         )

@@ -107,7 +107,7 @@ class BookViewModel(
             _naverResults.value = items
             if (items.isEmpty()) _naverError.value = "검색 결과가 없습니다"
         } catch (e: Exception) {
-            _naverError.value = "검색 오류: ${e.localizedMessage ?: "네트워크를 확인해주세요"}"
+            _naverError.value = "검색 오류: ${e.javaClass.simpleName}: ${e.message ?: "null"}"
             _naverResults.value = emptyList()
         } finally {
             _naverSearching.value = false
