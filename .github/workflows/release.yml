@@ -28,6 +28,18 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/release.keystore
 
+      - name: Create NaverApiKeys.kt
+        run: |
+          mkdir -p app/src/main/java/com/g1/booklog/data/network
+          cat > app/src/main/java/com/g1/booklog/data/network/NaverApiKeys.kt << 'EOF'
+          package com.g1.booklog.data.network
+
+          object NaverApiKeys {
+              const val CLIENT_ID = "${{ secrets.NAVER_CLIENT_ID }}"
+              const val CLIENT_SECRET = "${{ secrets.NAVER_CLIENT_SECRET }}"
+          }
+          EOF
+
       - name: Grant gradlew permission
         run: chmod +x gradlew
 
