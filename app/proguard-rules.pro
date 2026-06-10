@@ -1,4 +1,5 @@
 -keep class com.g1.booklog.data.model.** { *; }
+-keep class com.g1.booklog.data.network.** { *; }
 -keepattributes *Annotation*
 
 # Retrofit
