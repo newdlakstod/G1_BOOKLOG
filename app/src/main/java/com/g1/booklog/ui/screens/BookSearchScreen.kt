@@ -89,15 +89,25 @@ fun BookSearchScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    placeholder = { Text("책 제목 또는 저자 검색") },
-                    leadingIcon = { Icon(Icons.Default.Search, null) },
-                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("책 제목 또는 저자 검색", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)) },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                focusManager.clearFocus()
+                                viewModel.searchNaverBooks(query)
+                                hasSearched = true
+                            },
+                            enabled = query.isNotBlank() && !isSearching
+                        ) {
+                            Icon(Icons.Default.Search, null)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = {
@@ -107,17 +117,6 @@ fun BookSearchScreen(
                     }),
                     shape = RoundedCornerShape(50.dp)
                 )
-                Button(
-                    onClick = {
-                        focusManager.clearFocus()
-                        viewModel.searchNaverBooks(query)
-                        hasSearched = true
-                    },
-                    enabled = query.isNotBlank() && !isSearching,
-                    shape = RoundedCornerShape(50.dp)
-                ) {
-                    Text("검색")
-                }
             }
 
             // 로딩

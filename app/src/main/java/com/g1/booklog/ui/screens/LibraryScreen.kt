@@ -326,6 +326,7 @@ fun LibraryScreen(
             if (!isSelectionMode) {
                 FloatingActionButton(
                     onClick = onAddBook,
+                    shape = androidx.compose.foundation.shape.CircleShape,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
