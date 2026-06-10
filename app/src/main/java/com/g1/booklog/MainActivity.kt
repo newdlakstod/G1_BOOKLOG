@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
+    private var bookViewModel: BookViewModel? = null
+
     private fun scheduleAutoUpload() {
         val now = Calendar.getInstance()
         val currentHour = now.get(Calendar.HOUR_OF_DAY)
@@ -48,6 +50,11 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    override fun onStop() {
+        super.onStop()
+        bookViewModel?.autoBackup()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -66,6 +73,7 @@ class MainActivity : ComponentActivity() {
             val viewModel: BookViewModel = viewModel(
                 factory = BookViewModel.Factory(repository, firebaseRepo)
             )
+            bookViewModel = viewModel
             val authViewModel: AuthViewModel = viewModel(
                 factory = AuthViewModel.Factory(firebaseRepo, webClientId)
             )

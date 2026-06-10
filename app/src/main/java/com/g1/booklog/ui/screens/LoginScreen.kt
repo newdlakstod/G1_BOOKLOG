@@ -13,16 +13,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.g1.booklog.ui.viewmodel.AuthViewModel
+import com.g1.booklog.ui.viewmodel.BookViewModel
 
 @Composable
-fun LoginScreen(authViewModel: AuthViewModel) {
+fun LoginScreen(authViewModel: AuthViewModel, bookViewModel: BookViewModel) {
     val context = LocalContext.current
     val message by authViewModel.message.collectAsState()
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        authViewModel.handleSignInResult(result.data)
+        authViewModel.handleSignInResult(result.data, onSuccess = { bookViewModel.autoRestore() })
     }
 
     Box(

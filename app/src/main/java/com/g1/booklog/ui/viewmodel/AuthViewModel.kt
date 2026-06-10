@@ -92,7 +92,7 @@ class AuthViewModel(
         return GoogleSignIn.getClient(context, gso).signInIntent
     }
 
-    fun handleSignInResult(data: Intent?) = viewModelScope.launch {
+    fun handleSignInResult(data: Intent?, onSuccess: () -> Unit = {}) = viewModelScope.launch {
         try {
             val account = GoogleSignIn.getSignedInAccountFromIntent(data)
                 .getResult(ApiException::class.java)
@@ -100,6 +100,7 @@ class AuthViewModel(
             auth.signInWithCredential(credential).await()
             firebaseRepo.saveUserProfile()
             loadProfile()
+            onSuccess()
         } catch (e: Exception) {
             _message.value = "로그인 실패: ${e.localizedMessage ?: "다시 시도해주세요"}"
         }

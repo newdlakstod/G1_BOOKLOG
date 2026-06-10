@@ -249,6 +249,20 @@ class BookViewModel(
         }
     }
 
+    fun autoBackup() = viewModelScope.launch {
+        try {
+            val books = repository.allBooks.first()
+            firebaseRepo.uploadBooks(books)
+        } catch (_: Exception) {}
+    }
+
+    fun autoRestore() = viewModelScope.launch {
+        try {
+            val books = firebaseRepo.downloadBooks()
+            if (books.isNotEmpty()) repository.replaceAllBooks(books)
+        } catch (_: Exception) {}
+    }
+
     class Factory(
         private val repository: BookRepository,
         private val firebaseRepo: FirebaseRepository

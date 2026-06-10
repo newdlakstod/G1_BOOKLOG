@@ -76,7 +76,7 @@ fun BookLogNavGraph(
             }
         }
         is AuthState.Unauthenticated -> {
-            LoginScreen(authViewModel = authViewModel)
+            LoginScreen(authViewModel = authViewModel, bookViewModel = viewModel)
         }
         is AuthState.Authenticated -> {
             val isCompact = LocalConfiguration.current.screenWidthDp < 600
