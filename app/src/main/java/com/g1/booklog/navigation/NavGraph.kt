@@ -133,7 +133,10 @@ fun BookLogNavGraph(
                         }
 
                         composable(Screen.Stats.route) {
-                            StatsScreen(viewModel = viewModel)
+                            StatsScreen(
+                                viewModel = viewModel,
+                                onBookClick = { navController.navigate(Screen.BookDetail.createRoute(it)) }
+                            )
                         }
 
                         composable(Screen.Note.route) {

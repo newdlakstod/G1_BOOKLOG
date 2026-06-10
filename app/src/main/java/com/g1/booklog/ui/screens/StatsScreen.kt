@@ -2,6 +2,7 @@ package com.g1.booklog.ui.screens
 
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -43,7 +44,8 @@ import kotlinx.coroutines.flow.flowOf
 @Composable
 fun StatsScreen(
     viewModel: BookViewModel,
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    onBookClick: (Long) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val archivedYears by viewModel.archivedYears.collectAsState()
@@ -149,7 +151,7 @@ fun StatsScreen(
             RatingDistributionCard(stats = ratingStats)
 
             if (recentCompleted.isNotEmpty()) {
-                RecentCompletedCard(books = recentCompleted)
+                RecentCompletedCard(books = recentCompleted, onBookClick = onBookClick)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -621,7 +623,7 @@ private fun RatingDistributionCard(stats: List<Pair<Int, Int>>) {
 // ── 최근 완독 리스트 ───────────────────────────────────────────────────────
 
 @Composable
-private fun RecentCompletedCard(books: List<Book>) {
+private fun RecentCompletedCard(books: List<Book>, onBookClick: (Long) -> Unit = {}) {
     val dateFormat = remember { SimpleDateFormat("yyyy.MM.dd", Locale.KOREA) }
 
     Card(
@@ -643,6 +645,7 @@ private fun RecentCompletedCard(books: List<Book>) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clickable { onBookClick(book.id) }
                         .padding(vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
