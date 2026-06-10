@@ -86,7 +86,7 @@ fun BookDetailScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { BookLogSnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(book.title, maxLines = 1, color = MaterialTheme.colorScheme.primary) },

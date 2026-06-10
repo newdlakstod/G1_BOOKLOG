@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -596,5 +597,25 @@ fun StarRatingDisplay(rating: Float, maxStars: Int = 5, starSize: androidx.compo
                 modifier = Modifier.size(starSize)
             )
         }
+    }
+}
+
+@Composable
+fun BookLogSnackbarHost(hostState: SnackbarHostState) {
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    SnackbarHost(hostState = hostState) { data ->
+        Snackbar(
+            snackbarData = data,
+            shape = RoundedCornerShape(50.dp),
+            containerColor = if (isLight)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = if (isLight)
+                MaterialTheme.colorScheme.onPrimaryContainer
+            else
+                MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 32.dp)
+        )
     }
 }
