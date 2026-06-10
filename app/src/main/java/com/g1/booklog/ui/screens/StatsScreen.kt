@@ -2,6 +2,7 @@ package com.g1.booklog.ui.screens
 
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -36,6 +37,7 @@ import com.g1.booklog.ui.theme.StatusWantToRead
 import com.g1.booklog.ui.viewmodel.BookViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlinx.coroutines.flow.flowOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,13 +46,24 @@ fun StatsScreen(
     onNavigateBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val monthlyStats by viewModel.getMonthlyReadingStats().collectAsState(initial = emptyList())
+    val archivedYears by viewModel.archivedYears.collectAsState()
 
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("booklog_prefs", Context.MODE_PRIVATE) }
     var annualGoal by remember { mutableIntStateOf(prefs.getInt("annual_goal", 12)) }
 
     val thisYear = Calendar.getInstance().get(Calendar.YEAR)
+    var selectedYear by remember { mutableIntStateOf(thisYear) }
+
+    val monthlyStats by remember(selectedYear) {
+        viewModel.getMonthlyReadingStatsForYear(selectedYear)
+    }.collectAsState(initial = emptyList())
+
+    val archivedBooks by remember(selectedYear) {
+        if (selectedYear == thisYear) flowOf(emptyList<Book>())
+        else viewModel.getArchivedBooks(selectedYear)
+    }.collectAsState(initial = emptyList())
+
     val completedThisYear = remember(uiState.allBooks, thisYear) {
         uiState.allBooks.count { book ->
             book.status == ReadingStatus.COMPLETED &&
@@ -60,15 +73,18 @@ fun StatsScreen(
         }
     }
 
-    val recentCompleted = remember(uiState.allBooks) {
-        uiState.allBooks
-            .filter { it.status == ReadingStatus.COMPLETED && it.endDate != null }
-            .sortedByDescending { it.endDate }
-            .take(10)
+    val displayBooks = if (selectedYear == thisYear) {
+        uiState.allBooks.filter { it.status == ReadingStatus.COMPLETED }
+    } else {
+        archivedBooks
     }
 
-    val ratingStats = remember(uiState.allBooks) {
-        val rated = uiState.allBooks.filter { it.status == ReadingStatus.COMPLETED && it.rating > 0f }
+    val recentCompleted = remember(displayBooks) {
+        displayBooks.filter { it.endDate != null }.sortedByDescending { it.endDate }.take(10)
+    }
+
+    val ratingStats = remember(displayBooks) {
+        val rated = displayBooks.filter { it.rating > 0f }
         (5 downTo 1).map { stars -> stars to rated.count { it.rating.toInt() == stars } }
     }
 
@@ -97,24 +113,37 @@ fun StatsScreen(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            StatusSummaryCard(
-                wantToRead = uiState.wantToReadCount,
-                reading = uiState.readingCount,
-                completed = uiState.completedCount
-            )
+            // 연도 선택 (아카이브된 연도가 있을 때만 표시)
+            if (archivedYears.isNotEmpty()) {
+                YearSelector(
+                    years = listOf(thisYear) + archivedYears,
+                    selectedYear = selectedYear,
+                    onYearSelect = { selectedYear = it }
+                )
+            }
 
-            AnnualGoalCard(
-                year = thisYear,
-                completedThisYear = completedThisYear,
-                goal = annualGoal,
-                onGoalChange = { newGoal ->
-                    annualGoal = newGoal
-                    prefs.edit().putInt("annual_goal", newGoal).apply()
-                }
-            )
+            if (selectedYear == thisYear) {
+                StatusSummaryCard(
+                    wantToRead = uiState.wantToReadCount,
+                    reading = uiState.readingCount,
+                    completed = uiState.completedCount
+                )
+
+                AnnualGoalCard(
+                    year = thisYear,
+                    completedThisYear = completedThisYear,
+                    goal = annualGoal,
+                    onGoalChange = { newGoal ->
+                        annualGoal = newGoal
+                        prefs.edit().putInt("annual_goal", newGoal).apply()
+                    }
+                )
+            } else {
+                ArchivedYearSummaryCard(year = selectedYear, completedCount = archivedBooks.size)
+            }
 
             if (monthlyStats.isNotEmpty()) {
-                MonthlyBarCard(stats = monthlyStats)
+                MonthlyBarCard(stats = monthlyStats, isCurrentYear = selectedYear == thisYear)
             }
 
             RatingDistributionCard(stats = ratingStats)
@@ -124,6 +153,74 @@ fun StatsScreen(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+// ── 연도 선택 ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun YearSelector(
+    years: List<Int>,
+    selectedYear: Int,
+    onYearSelect: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        years.forEach { year ->
+            FilterChip(
+                selected = year == selectedYear,
+                onClick = { onYearSelect(year) },
+                label = { Text("${year}년") }
+            )
+        }
+    }
+}
+
+// ── 아카이브 연도 요약 ─────────────────────────────────────────────────────
+
+@Composable
+private fun ArchivedYearSummaryCard(year: Int, completedCount: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "${year}년 독서 기록",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = completedCount.toString(),
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = StatusCompleted,
+                    lineHeight = 32.sp
+                )
+                Text(
+                    text = "권 완독",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+            }
         }
     }
 }
@@ -320,10 +417,10 @@ private fun AnnualGoalCard(
 // ── 월별 롤리팝 차트 (1월~12월) ──────────────────────────────────────────
 
 @Composable
-private fun MonthlyBarCard(stats: List<Pair<String, Int>>) {
+private fun MonthlyBarCard(stats: List<Pair<String, Int>>, isCurrentYear: Boolean = true) {
     val maxCount = stats.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
     val accentColor = Color(0xFF537D96)
-    val currentMonth = Calendar.getInstance().get(Calendar.MONTH) + 1
+    val currentMonth = if (isCurrentYear) Calendar.getInstance().get(Calendar.MONTH) + 1 else -1
 
     Card(
         modifier = Modifier.fillMaxWidth(),

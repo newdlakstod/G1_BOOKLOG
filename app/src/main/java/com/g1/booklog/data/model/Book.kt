@@ -44,5 +44,6 @@ data class Book(
     val endDate: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val orderIndex: Int = 0
+    val orderIndex: Int = 0,
+    val archivedYear: Int? = null
 )

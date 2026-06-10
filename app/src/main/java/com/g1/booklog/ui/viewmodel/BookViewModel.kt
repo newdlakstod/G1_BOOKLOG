@@ -43,7 +43,11 @@ class BookViewModel(
     private val _myPhotoUrl = MutableStateFlow("")
     val myPhotoUrl: StateFlow<String> = _myPhotoUrl.asStateFlow()
 
+    val archivedYears: StateFlow<List<Int>> = repository.getArchivedYears()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     init {
+        viewModelScope.launch { repository.archiveOldCompletedBooks() }
         viewModelScope.launch {
             _myDisplayName.value = firebaseRepo.getMyNickname()
             _myPhotoUrl.value = firebaseRepo.getMyPhotoUrl()
@@ -123,6 +127,7 @@ class BookViewModel(
 
     fun getBookById(id: Long): Flow<Book?> = repository.getBookById(id)
     fun getRecordsByBook(bookId: Long): Flow<List<ReadingRecord>> = repository.getRecordsByBook(bookId)
+    fun getArchivedBooks(year: Int): Flow<List<Book>> = repository.getArchivedBooks(year)
 
     fun getMonthlyCompletedBooks(): Flow<List<Book>> {
         val cal = Calendar.getInstance()
@@ -138,11 +143,18 @@ class BookViewModel(
     }
 
     fun getMonthlyReadingStats(): Flow<List<Pair<String, Int>>> =
-        repository.allBooks.map { books ->
-            val thisYear = Calendar.getInstance().get(Calendar.YEAR)
+        getMonthlyReadingStatsForYear(Calendar.getInstance().get(Calendar.YEAR))
+
+    fun getMonthlyReadingStatsForYear(year: Int): Flow<List<Pair<String, Int>>> {
+        val booksFlow = if (year == Calendar.getInstance().get(Calendar.YEAR)) {
+            repository.allBooks
+        } else {
+            repository.getArchivedBooks(year)
+        }
+        return booksFlow.map { books ->
             (1..12).map { month ->
                 val cal = Calendar.getInstance()
-                cal.set(thisYear, month - 1, 1, 0, 0, 0)
+                cal.set(year, month - 1, 1, 0, 0, 0)
                 cal.set(Calendar.MILLISECOND, 0)
                 val start = cal.timeInMillis
                 cal.add(Calendar.MONTH, 1)
@@ -155,6 +167,7 @@ class BookViewModel(
                 "${month}월" to count
             }
         }
+    }
 
     fun getGenreStats(): Flow<Map<BookGenre, Int>> = repository.allBooks.map { books ->
         books.filter { it.status == ReadingStatus.COMPLETED }
@@ -230,7 +243,7 @@ class BookViewModel(
     fun uploadToCloud() = viewModelScope.launch {
         _syncState.value = "업로드 중..."
         try {
-            val books = repository.allBooks.first()
+            val books = repository.allBooksIncludingArchived.first()
             firebaseRepo.uploadBooks(books)
             _syncState.value = "업로드 완료 (${books.size}권)"
         } catch (e: Exception) {
@@ -251,7 +264,7 @@ class BookViewModel(
 
     fun autoBackup() = viewModelScope.launch {
         try {
-            val books = repository.allBooks.first()
+            val books = repository.allBooksIncludingArchived.first()
             firebaseRepo.uploadBooks(books)
         } catch (_: Exception) {}
     }
