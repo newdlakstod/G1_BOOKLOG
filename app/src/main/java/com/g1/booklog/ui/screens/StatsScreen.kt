@@ -1,8 +1,10 @@
 package com.g1.booklog.ui.screens
 
 import android.content.Context
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -151,7 +153,11 @@ fun StatsScreen(
             RatingDistributionCard(stats = ratingStats)
 
             if (recentCompleted.isNotEmpty()) {
-                RecentCompletedCard(books = recentCompleted, onBookClick = onBookClick)
+                RecentCompletedCard(
+                    books = recentCompleted,
+                    onBookClick = onBookClick,
+                    onDeleteBook = { viewModel.deleteBook(it) }
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -622,9 +628,37 @@ private fun RatingDistributionCard(stats: List<Pair<Int, Int>>) {
 
 // ── 최근 완독 리스트 ───────────────────────────────────────────────────────
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun RecentCompletedCard(books: List<Book>, onBookClick: (Long) -> Unit = {}) {
+private fun RecentCompletedCard(
+    books: List<Book>,
+    onBookClick: (Long) -> Unit = {},
+    onDeleteBook: (Book) -> Unit = {}
+) {
     val dateFormat = remember { SimpleDateFormat("yyyy.MM.dd", Locale.KOREA) }
+    var bookToDelete by remember { mutableStateOf<Book?>(null) }
+
+    bookToDelete?.let { book ->
+        AlertDialog(
+            onDismissRequest = { bookToDelete = null },
+            title = { Text("책 삭제") },
+            text = {
+                Text(
+                    "「${book.title}」을(를) 삭제할까요?\n삭제된 책은 복구할 수 없습니다.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteBook(book)
+                    bookToDelete = null
+                }) { Text("삭제", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { bookToDelete = null }) { Text("취소") }
+            }
+        )
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -645,7 +679,10 @@ private fun RecentCompletedCard(books: List<Book>, onBookClick: (Long) -> Unit =
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onBookClick(book.id) }
+                        .combinedClickable(
+                            onClick = { onBookClick(book.id) },
+                            onLongClick = { bookToDelete = book }
+                        )
                         .padding(vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
