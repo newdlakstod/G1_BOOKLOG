@@ -150,14 +150,24 @@ fun StatsScreen(
                 MonthlyBarCard(stats = monthlyStats, isCurrentYear = selectedYear == thisYear)
             }
 
-            RatingDistributionCard(stats = ratingStats)
+            if (selectedYear == thisYear) {
+                RatingDistributionCard(stats = ratingStats)
 
-            if (recentCompleted.isNotEmpty()) {
-                RecentCompletedCard(
-                    books = recentCompleted,
-                    onBookClick = onBookClick,
-                    onDeleteBook = { viewModel.deleteBook(it) }
-                )
+                if (recentCompleted.isNotEmpty()) {
+                    RecentCompletedCard(
+                        books = recentCompleted,
+                        onBookClick = onBookClick,
+                        onDeleteBook = { viewModel.deleteBook(it) }
+                    )
+                }
+            } else {
+                if (displayBooks.isNotEmpty()) {
+                    CompletedGridCard(
+                        books = displayBooks.sortedByDescending { it.endDate ?: it.createdAt },
+                        onBookClick = onBookClick,
+                        onDeleteBook = { viewModel.deleteBook(it) }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -748,6 +758,96 @@ private fun RecentCompletedCard(
                         thickness = 1.dp
                     )
                 }
+            }
+        }
+    }
+}
+
+// ── 완독 리스트 그리드 (아카이브 연도용) ─────────────────────────────────
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun CompletedGridCard(
+    books: List<Book>,
+    onBookClick: (Long) -> Unit = {},
+    onDeleteBook: (Book) -> Unit = {}
+) {
+    var bookToDelete by remember { mutableStateOf<Book?>(null) }
+
+    bookToDelete?.let { book ->
+        AlertDialog(
+            onDismissRequest = { bookToDelete = null },
+            title = { Text("책 삭제") },
+            text = {
+                Text(
+                    "「${book.title}」을(를) 삭제할까요?\n삭제된 책은 복구할 수 없습니다.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteBook(book)
+                    bookToDelete = null
+                }) { Text("삭제", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { bookToDelete = null }) { Text("취소") }
+            }
+        )
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = "완독 리스트",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                letterSpacing = 0.5.sp
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+
+            val rows = books.chunked(5)
+            rows.forEach { rowBooks ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    rowBooks.forEach { book ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(2f / 3f)
+                                .clip(RoundedCornerShape(4.dp))
+                                .combinedClickable(
+                                    onClick = { onBookClick(book.id) },
+                                    onLongClick = { bookToDelete = book }
+                                )
+                        ) {
+                            if (book.coverImageUrl.isNotEmpty()) {
+                                AsyncImage(
+                                    model = book.coverImageUrl,
+                                    contentDescription = book.title,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                BookCoverPlaceholder(
+                                    title = book.title,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+                    }
+                    repeat(5 - rowBooks.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
             }
         }
     }
