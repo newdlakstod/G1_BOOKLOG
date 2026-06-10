@@ -331,14 +331,52 @@ private fun MonthlyBarCard(stats: List<Pair<String, Int>>) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
+        val allEmpty = stats.all { it.second == 0 }
+
         Column(modifier = Modifier.padding(20.dp)) {
-            Text(
-                text = "월별 독서량",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                letterSpacing = 0.5.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "월별 독서량",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    letterSpacing = 0.5.sp
+                )
+                if (!allEmpty) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(accentColor)
+                        )
+                        Text(
+                            "완독 권수",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(16.dp))
+            if (allEmpty) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "아직 완독한 책이 없어요",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    )
+                }
+            } else {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -401,6 +439,7 @@ private fun MonthlyBarCard(stats: List<Pair<String, Int>>) {
                     }
                 }
             }
+            }
         }
     }
 }
@@ -418,6 +457,8 @@ private fun RatingDistributionCard(stats: List<Pair<Int, Int>>) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
+        val allEmpty = stats.all { it.second == 0 }
+
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = "별점 분포",
@@ -426,7 +467,18 @@ private fun RatingDistributionCard(stats: List<Pair<Int, Int>>) {
                 letterSpacing = 0.5.sp
             )
             Spacer(modifier = Modifier.height(14.dp))
-            stats.forEach { (stars, count) ->
+            if (allEmpty) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "아직 별점을 매긴 책이 없어요",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    )
+                }
+            } else stats.forEach { (stars, count) ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

@@ -1,6 +1,7 @@
 package com.g1.booklog.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -8,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +39,9 @@ fun CalendarScreen(viewModel: BookViewModel) {
     val todayYear  = now.get(Calendar.YEAR)
     val todayMonth = now.get(Calendar.MONTH)
     val todayDay   = now.get(Calendar.DAY_OF_MONTH)
+
+    var selectedDayBooks by remember { mutableStateOf<List<Book>>(emptyList()) }
+    var selectedDay by remember { mutableStateOf<Int?>(null) }
 
     // day -> completed books with endDate in this month
     val completedOnDay: Map<Int, List<Book>> = remember(uiState.allBooks, displayYear, displayMonth) {
@@ -68,6 +73,60 @@ fun CalendarScreen(viewModel: BookViewModel) {
         val day = i - firstDayOfWeek + 1
         if (day in 1..daysInMonth) day else null
     }.chunked(7)
+
+    selectedDay?.let { day ->
+        AlertDialog(
+            onDismissRequest = { selectedDay = null },
+            title = { Text("${displayYear}년 ${displayMonth + 1}월 ${day}일") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    selectedDayBooks.forEach { book ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            if (book.coverImageUrl.isNotEmpty()) {
+                                AsyncImage(
+                                    model = book.coverImageUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(32.dp, 46.dp)
+                                        .clip(RoundedCornerShape(4.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                BookCoverPlaceholder(
+                                    title = book.title,
+                                    modifier = Modifier.size(32.dp, 46.dp)
+                                )
+                            }
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(
+                                    book.title,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                if (book.author.isNotBlank()) {
+                                    Text(
+                                        book.author,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { selectedDay = null }) { Text("닫기") }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -148,15 +207,19 @@ fun CalendarScreen(viewModel: BookViewModel) {
                             .fillMaxWidth()
                     ) {
                         week.forEachIndexed { dayIdx, day ->
+                            val dayBooks = day?.let { completedOnDay[it] } ?: emptyList()
                             DayCell(
                                 day       = day,
-                                books     = day?.let { completedOnDay[it] } ?: emptyList(),
+                                books     = dayBooks,
                                 isToday   = day != null
                                             && displayYear  == todayYear
                                             && displayMonth == todayMonth
                                             && day == todayDay,
                                 isSunday   = dayIdx == 0,
                                 isSaturday = dayIdx == 6,
+                                onClick    = if (dayBooks.isNotEmpty() && day != null) {
+                                    { selectedDay = day; selectedDayBooks = dayBooks }
+                                } else null,
                                 modifier   = Modifier
                                     .weight(1f)
                                     .fillMaxHeight()
@@ -182,9 +245,12 @@ private fun DayCell(
     isToday: Boolean,
     isSunday: Boolean,
     isSaturday: Boolean,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.padding(1.5.dp)) {
+    Box(modifier = modifier.padding(1.5.dp).then(
+        if (onClick != null) Modifier.clickable { onClick() } else Modifier
+    )) {
         if (day != null) {
             Column(
                 modifier = Modifier

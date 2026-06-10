@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -89,6 +90,10 @@ fun LibraryScreen(
 
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showStatusPicker by remember { mutableStateOf(false) }
+    var pendingTabChange by remember { mutableStateOf<Int?>(null) }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     // Pager for swipe-to-change-tab
     val pagerState = rememberPagerState(pageCount = { tabs.size })
@@ -98,8 +103,12 @@ fun LibraryScreen(
     }
     LaunchedEffect(pagerState.settledPage) {
         if (selectedTab != pagerState.settledPage) {
-            selectedTab = pagerState.settledPage
-            selectedIds = emptySet()
+            if (isSelectionMode) {
+                pendingTabChange = pagerState.settledPage
+                pagerState.scrollToPage(selectedTab)
+            } else {
+                selectedTab = pagerState.settledPage
+            }
         }
     }
 
@@ -166,13 +175,33 @@ fun LibraryScreen(
             text = { Text("선택한 ${selectedIds.size}권을 삭제하시겠습니까?") },
             confirmButton = {
                 TextButton(onClick = {
+                    val count = selectedIds.size
                     uiState.allBooks.filter { it.id in selectedIds }.forEach { viewModel.deleteBook(it) }
                     selectedIds = emptySet()
                     showDeleteConfirm = false
+                    scope.launch { snackbarHostState.showSnackbar("${count}권이 삭제됐습니다") }
                 }) { Text("삭제", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) { Text("취소") }
+            }
+        )
+    }
+
+    pendingTabChange?.let { targetTab ->
+        AlertDialog(
+            onDismissRequest = { pendingTabChange = null },
+            text = { Text("탭을 이동하면 선택이 해제됩니다.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    selectedIds = emptySet()
+                    selectedTab = targetTab
+                    scope.launch { pagerState.scrollToPage(targetTab) }
+                    pendingTabChange = null
+                }) { Text("이동") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingTabChange = null }) { Text("취소") }
             }
         )
     }
@@ -190,11 +219,13 @@ fun LibraryScreen(
                     ).forEach { (status, label) ->
                         TextButton(
                             onClick = {
+                                val count = selectedIds.size
                                 uiState.allBooks.filter { it.id in selectedIds }.forEach {
                                     viewModel.updateBook(it.copy(status = status))
                                 }
                                 selectedIds = emptySet()
                                 showStatusPicker = false
+                                scope.launch { snackbarHostState.showSnackbar("${count}권의 상태가 변경됐습니다") }
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -361,6 +392,7 @@ fun LibraryScreen(
                 }
             }
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,6 +61,9 @@ fun BookDetailScreen(
         draft = bookFromDb
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     val book = draft ?: return
 
     // 별점/한줄평/메모는 별도 로컬 상태로 관리 (즉시 저장 X)
@@ -75,10 +79,14 @@ fun BookDetailScreen(
         val encodedMemo = memoEntries.filter { it.isNotBlank() }.joinToString(ENTRY_SEP)
         val encodedHighlights = highlightEntries.filter { it.isNotBlank() }.joinToString(ENTRY_SEP)
         viewModel.updateBook(book.copy(review = reviewText, memo = encodedMemo, highlights = encodedHighlights))
-        onNavigateBack()
+        scope.launch {
+            snackbarHostState.showSnackbar("저장됐습니다")
+            onNavigateBack()
+        }
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(book.title, maxLines = 1, color = MaterialTheme.colorScheme.primary) },
@@ -374,6 +382,13 @@ private fun RatingReviewSection(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
                 )
+                IconButton(onClick = { onRatingChange(0f) }, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        Icons.Default.Close, "별점 취소",
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    )
+                }
             }
         }
 

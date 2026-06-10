@@ -131,7 +131,7 @@ fun HomeScreen(
                         onBookLongClick = { bookToDelete = it }
                     )
                 } else {
-                    EmptyReadingState(status = selectedStatus, onAddBook = onAddBook)
+                    EmptyReadingState(status = selectedStatus, isFirstBook = uiState.allBooks.isEmpty(), onAddBook = onAddBook)
                 }
             }
 
@@ -286,30 +286,68 @@ private fun ReadingPagerCarousel(
 }
 
 @Composable
-private fun EmptyReadingState(status: ReadingStatus, onAddBook: () -> Unit) {
-    val message = when (status) {
-        ReadingStatus.WANT_TO_READ -> "독서예정 책이 없어요"
-        ReadingStatus.READING      -> "독서중인 책이 없어요"
-        ReadingStatus.COMPLETED    -> "완독한 책이 없어요"
-    }
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.MenuBook,
-            contentDescription = null,
-            modifier = Modifier.size(72.dp),
-            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        TextButton(onClick = onAddBook) { Text("책 추가하기") }
+private fun EmptyReadingState(status: ReadingStatus, isFirstBook: Boolean, onAddBook: () -> Unit) {
+    if (isFirstBook) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(horizontal = 32.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.MenuBook,
+                contentDescription = null,
+                modifier = Modifier.size(80.dp),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = "지독한책장에 오신 걸 환영해요",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "첫 번째 책을 추가하고\n나만의 독서 기록을 시작해보세요",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = onAddBook,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("첫 책 추가하기")
+            }
+        }
+    } else {
+        val message = when (status) {
+            ReadingStatus.WANT_TO_READ -> "독서예정 책이 없어요"
+            ReadingStatus.READING      -> "독서중인 책이 없어요"
+            ReadingStatus.COMPLETED    -> "완독한 책이 없어요"
+        }
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.MenuBook,
+                contentDescription = null,
+                modifier = Modifier.size(72.dp),
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(onClick = onAddBook) { Text("책 추가하기") }
+        }
     }
 }
 
