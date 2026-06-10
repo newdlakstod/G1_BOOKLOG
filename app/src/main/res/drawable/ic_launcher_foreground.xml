@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Left cover at -65° (teal) -->
+    <group
+        android:pivotX="54"
+        android:pivotY="76"
+        android:rotation="-65">
+        <path
+            android:fillColor="#44A194"
+            android:pathData="M51,34 L57,34 L57,76 L51,76 Z" />
+    </group>
+
+    <!-- Page at -43° -->
+    <group
+        android:pivotX="54"
+        android:pivotY="76"
+        android:rotation="-43">
+        <path
+            android:fillColor="#B8DDD9"
+            android:pathData="M52.5,34 L55.5,34 L55.5,76 L52.5,76 Z" />
+    </group>
+
+    <!-- Page at -22° -->
+    <group
+        android:pivotX="54"
+        android:pivotY="76"
+        android:rotation="-22">
+        <path
+            android:fillColor="#B8DDD9"
+            android:pathData="M52.5,34 L55.5,34 L55.5,76 L52.5,76 Z" />
+    </group>
+
+    <!-- Center page at 0° -->
+    <group
+        android:pivotX="54"
+        android:pivotY="76"
+        android:rotation="0">
+        <path
+            android:fillColor="#B8DDD9"
+            android:pathData="M52.5,34 L55.5,34 L55.5,76 L52.5,76 Z" />
+    </group>
+
+    <!-- Page at +22° -->
+    <group
+        android:pivotX="54"
+        android:pivotY="76"
+        android:rotation="22">
+        <path
+            android:fillColor="#B8DDD9"
+            android:pathData="M52.5,34 L55.5,34 L55.5,76 L52.5,76 Z" />
+    </group>
+
+    <!-- Page at +43° -->
+    <group
+        android:pivotX="54"
+        android:pivotY="76"
+        android:rotation="43">
+        <path
+            android:fillColor="#B8DDD9"
+            android:pathData="M52.5,34 L55.5,34 L55.5,76 L52.5,76 Z" />
+    </group>
+
+    <!-- Right cover at +65° (teal) -->
+    <group
+        android:pivotX="54"
+        android:pivotY="76"
+        android:rotation="65">
+        <path
+            android:fillColor="#44A194"
+            android:pathData="M51,34 L57,34 L57,76 L51,76 Z" />
+    </group>
+
+    <!-- Book spine (horizontal base bar) -->
+    <path
+        android:fillColor="#44A194"
+        android:pathData="M24,76 L84,76 L84,83 Q54,87 24,83 Z" />
+</vector>

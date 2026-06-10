@@ -1,0 +1,26 @@
+# Built outputs
+*.apk
+*.aab
+*.dex
+/build/
+app/build/
+.gradle/
+.kotlin/
+
+# Local config (contains SDK path — machine-specific)
+local.properties
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Google Services (contains API keys — add manually or via secrets)
+app/google-services.json
+
+# Naver API Keys (contains sensitive credentials)
+app/src/main/java/com/g1/booklog/data/network/NaverApiKeys.kt
+
+# Keystore files
+*.jks
+*.keystore

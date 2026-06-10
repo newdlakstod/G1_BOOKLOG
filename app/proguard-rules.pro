@@ -1,0 +1,2 @@
+-keep class com.g1.booklog.data.model.** { *; }
+-keepattributes *Annotation*
