@@ -10,6 +10,7 @@ import com.g1.booklog.data.model.ReadingStatus
 import com.g1.booklog.data.network.GoogleBookItem
 import com.g1.booklog.data.network.GoogleBooksApi
 import com.g1.booklog.data.network.GoogleImageSearch
+import com.g1.booklog.data.network.KyoboCover
 import com.g1.booklog.data.network.OpenLibrary
 import com.g1.booklog.data.repository.BookRepository
 import com.g1.booklog.data.repository.FirebaseRepository
@@ -145,6 +146,7 @@ class BookViewModel(
                 }
             } catch (_: Exception) { /* 표지 검색 실패는 무시 */ }
         }
+        KyoboCover.coverUrlForIsbn(isbn.trim())?.let { urls.add(it) }
         OpenLibrary.coverUrlForIsbn(isbn.trim())?.let { urls.add(it) }
         if (title.isNotBlank()) urls.addAll(OpenLibrary.coverUrlsByTitle(title.trim()))
         if (title.isNotBlank()) urls.addAll(GoogleImageSearch.coverImageUrls("${title.trim()} 책 표지"))
