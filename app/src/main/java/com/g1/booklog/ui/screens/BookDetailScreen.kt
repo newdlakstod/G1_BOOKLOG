@@ -89,14 +89,12 @@ fun BookDetailScreen(
     var showCoverDialog by remember { mutableStateOf(false) }
     val coverCandidates by viewModel.coverCandidates.collectAsState()
     val coverSearching by viewModel.coverSearching.collectAsState()
-    val coverDebug by viewModel.coverDebug.collectAsState()
     if (showCoverDialog) {
         CoverPickerDialog(
             candidates = coverCandidates,
             loading = coverSearching,
             onPick = { draft = book.copy(coverImageUrl = it); showCoverDialog = false; viewModel.clearCoverCandidates() },
-            onDismiss = { showCoverDialog = false; viewModel.clearCoverCandidates() },
-            debug = coverDebug
+            onDismiss = { showCoverDialog = false; viewModel.clearCoverCandidates() }
         )
     }
 
@@ -106,6 +104,9 @@ fun BookDetailScreen(
             CenterAlignedTopAppBar(
                 title = { Text(book.title, maxLines = 1, color = MaterialTheme.colorScheme.primary) },
                 actions = {
+                    IconButton(onClick = { onEditBook(book.id) }) {
+                        Icon(Icons.Default.Edit, "책 정보 수정", tint = MaterialTheme.colorScheme.primary)
+                    }
                     IconButton(onClick = { saveAndBack() }) {
                         Icon(Icons.Default.Check, "수정완료", tint = MaterialTheme.colorScheme.primary)
                     }

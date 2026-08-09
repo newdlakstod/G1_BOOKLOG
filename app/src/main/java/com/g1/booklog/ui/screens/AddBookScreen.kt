@@ -101,15 +101,13 @@ fun BookFormScreen(
     var showCoverDialog by remember { mutableStateOf(false) }
     val coverCandidates by viewModel.coverCandidates.collectAsState()
     val coverSearching by viewModel.coverSearching.collectAsState()
-    val coverDebug by viewModel.coverDebug.collectAsState()
 
     if (showCoverDialog) {
         CoverPickerDialog(
             candidates = coverCandidates,
             loading = coverSearching,
             onPick = { coverImageUrl = it; showCoverDialog = false; viewModel.clearCoverCandidates() },
-            onDismiss = { showCoverDialog = false; viewModel.clearCoverCandidates() },
-            debug = coverDebug
+            onDismiss = { showCoverDialog = false; viewModel.clearCoverCandidates() }
         )
     }
 
@@ -369,14 +367,12 @@ fun CoverPickerDialog(
     candidates: List<String>,
     loading: Boolean,
     onPick: (String) -> Unit,
-    onDismiss: () -> Unit,
-    debug: String = ""
+    onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("표지 선택") },
         text = {
-            Column {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -405,15 +401,6 @@ fun CoverPickerDialog(
                         }
                     }
                 }
-            }
-            if (debug.isNotBlank()) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = debug,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
             }
         },
         confirmButton = {

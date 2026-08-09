@@ -136,43 +136,31 @@ class BookViewModel(
     private val _coverSearching = MutableStateFlow(false)
     val coverSearching: StateFlow<Boolean> = _coverSearching.asStateFlow()
 
-    // 표지 검색 진단 (소스별 개수/에러) — 어디서 막히는지 화면에서 바로 보기 위함
-    private val _coverDebug = MutableStateFlow("")
-    val coverDebug: StateFlow<String> = _coverDebug.asStateFlow()
-
     fun searchCovers(title: String, isbn: String) = viewModelScope.launch {
         _coverSearching.value = true
         val urls = LinkedHashSet<String>()
-        val dbg = StringBuilder("제목='${title.trim()}' ISBN='${isbn.trim().ifBlank { "없음" }}'")
 
-        suspend fun step(name: String, block: suspend () -> List<String>) {
-            try {
-                val r = block()
-                urls.addAll(r)
-                dbg.append(" | $name=${r.size}")
-            } catch (e: Exception) {
-                dbg.append(" | $name!${e.javaClass.simpleName}")
-            }
+        // 소스별로 격리 실행 (한 소스가 실패해도 나머지는 계속)
+        suspend fun step(block: suspend () -> List<String>) {
+            try { urls.addAll(block()) } catch (_: Exception) { /* 무시 */ }
         }
 
-        if (title.isNotBlank()) step("Kakao") { KakaoBookSearch.coverThumbnails(title.trim()) }
+        if (title.isNotBlank()) step { KakaoBookSearch.coverThumbnails(title.trim()) }
         val query = if (title.isNotBlank()) title.trim() else if (isbn.isNotBlank()) "isbn:$isbn" else ""
-        if (query.isNotBlank()) step("GBooks") {
+        if (query.isNotBlank()) step {
             GoogleBooksApi.service.searchBooks(query = query).items.orEmpty().mapNotNull { it.getThumbnail().ifBlank { null } }
         }
-        step("Kyobo") { listOfNotNull(KyoboCover.coverUrlForIsbn(isbn.trim())) }
-        step("OL-isbn") { listOfNotNull(OpenLibrary.coverUrlForIsbn(isbn.trim())) }
-        if (title.isNotBlank()) step("OL-title") { OpenLibrary.coverUrlsByTitle(title.trim()) }
-        if (title.isNotBlank()) step("GImg") { GoogleImageSearch.coverImageUrls("${title.trim()} 책 표지") }
+        step { listOfNotNull(KyoboCover.coverUrlForIsbn(isbn.trim())) }
+        step { listOfNotNull(OpenLibrary.coverUrlForIsbn(isbn.trim())) }
+        if (title.isNotBlank()) step { OpenLibrary.coverUrlsByTitle(title.trim()) }
+        if (title.isNotBlank()) step { GoogleImageSearch.coverImageUrls("${title.trim()} 책 표지") }
 
         _coverCandidates.value = urls.toList()
-        _coverDebug.value = dbg.toString()
         _coverSearching.value = false
     }
 
     fun clearCoverCandidates() {
         _coverCandidates.value = emptyList()
-        _coverDebug.value = ""
     }
 
     fun getBookById(id: Long): Flow<Book?> = repository.getBookById(id)
