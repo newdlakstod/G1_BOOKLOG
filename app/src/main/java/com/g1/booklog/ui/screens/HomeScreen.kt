@@ -220,26 +220,6 @@ private fun ReadingPagerCarousel(
                                 modifier = Modifier.fillMaxWidth().aspectRatio(0.67f)
                             )
                         }
-                        if (book.status == ReadingStatus.READING && book.totalPages != null && book.totalPages > 0 && book.currentPage > 0) {
-                            val progress = (book.currentPage.toFloat() / book.totalPages).coerceIn(0f, 1f)
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .fillMaxWidth()
-                                    .height(44.dp)
-                                    .background(
-                                        Brush.verticalGradient(
-                                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.72f))
-                                        )
-                                    )
-                            )
-                            Text(
-                                text = "${(progress * 100).toInt()}%",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
-                                modifier = Modifier.align(Alignment.BottomStart).padding(8.dp)
-                            )
-                        }
                     }
                 }
             }

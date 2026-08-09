@@ -14,8 +14,8 @@ android {
         applicationId = "com.g1.booklog"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1317
-        versionName = "1.3.17"
+        versionCode = 1318
+        versionName = "1.3.18"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
