@@ -136,27 +136,44 @@ class BookViewModel(
     private val _coverSearching = MutableStateFlow(false)
     val coverSearching: StateFlow<Boolean> = _coverSearching.asStateFlow()
 
+    // 표지 검색 진단 (소스별 개수/에러) — 어디서 막히는지 화면에서 바로 보기 위함
+    private val _coverDebug = MutableStateFlow("")
+    val coverDebug: StateFlow<String> = _coverDebug.asStateFlow()
+
     fun searchCovers(title: String, isbn: String) = viewModelScope.launch {
         _coverSearching.value = true
         val urls = LinkedHashSet<String>()
-        val query = if (title.isNotBlank()) title.trim() else if (isbn.isNotBlank()) "isbn:$isbn" else ""
-        if (query.isNotBlank()) {
+        val dbg = StringBuilder("제목='${title.trim()}' ISBN='${isbn.trim().ifBlank { "없음" }}'")
+
+        suspend fun step(name: String, block: suspend () -> List<String>) {
             try {
-                GoogleBooksApi.service.searchBooks(query = query).items.orEmpty().forEach { item ->
-                    item.getThumbnail().takeIf { it.isNotBlank() }?.let { urls.add(it) }
-                }
-            } catch (_: Exception) { /* 표지 검색 실패는 무시 */ }
+                val r = block()
+                urls.addAll(r)
+                dbg.append(" | $name=${r.size}")
+            } catch (e: Exception) {
+                dbg.append(" | $name!${e.javaClass.simpleName}")
+            }
         }
-        if (title.isNotBlank()) urls.addAll(KakaoBookSearch.coverThumbnails(title.trim()))
-        KyoboCover.coverUrlForIsbn(isbn.trim())?.let { urls.add(it) }
-        OpenLibrary.coverUrlForIsbn(isbn.trim())?.let { urls.add(it) }
-        if (title.isNotBlank()) urls.addAll(OpenLibrary.coverUrlsByTitle(title.trim()))
-        if (title.isNotBlank()) urls.addAll(GoogleImageSearch.coverImageUrls("${title.trim()} 책 표지"))
+
+        if (title.isNotBlank()) step("Kakao") { KakaoBookSearch.coverThumbnails(title.trim()) }
+        val query = if (title.isNotBlank()) title.trim() else if (isbn.isNotBlank()) "isbn:$isbn" else ""
+        if (query.isNotBlank()) step("GBooks") {
+            GoogleBooksApi.service.searchBooks(query = query).items.orEmpty().mapNotNull { it.getThumbnail().ifBlank { null } }
+        }
+        step("Kyobo") { listOfNotNull(KyoboCover.coverUrlForIsbn(isbn.trim())) }
+        step("OL-isbn") { listOfNotNull(OpenLibrary.coverUrlForIsbn(isbn.trim())) }
+        if (title.isNotBlank()) step("OL-title") { OpenLibrary.coverUrlsByTitle(title.trim()) }
+        if (title.isNotBlank()) step("GImg") { GoogleImageSearch.coverImageUrls("${title.trim()} 책 표지") }
+
         _coverCandidates.value = urls.toList()
+        _coverDebug.value = dbg.toString()
         _coverSearching.value = false
     }
 
-    fun clearCoverCandidates() { _coverCandidates.value = emptyList() }
+    fun clearCoverCandidates() {
+        _coverCandidates.value = emptyList()
+        _coverDebug.value = ""
+    }
 
     fun getBookById(id: Long): Flow<Book?> = repository.getBookById(id)
     fun getRecordsByBook(bookId: Long): Flow<List<ReadingRecord>> = repository.getRecordsByBook(bookId)

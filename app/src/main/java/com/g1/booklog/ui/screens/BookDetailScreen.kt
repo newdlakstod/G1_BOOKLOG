@@ -89,12 +89,14 @@ fun BookDetailScreen(
     var showCoverDialog by remember { mutableStateOf(false) }
     val coverCandidates by viewModel.coverCandidates.collectAsState()
     val coverSearching by viewModel.coverSearching.collectAsState()
+    val coverDebug by viewModel.coverDebug.collectAsState()
     if (showCoverDialog) {
         CoverPickerDialog(
             candidates = coverCandidates,
             loading = coverSearching,
             onPick = { draft = book.copy(coverImageUrl = it); showCoverDialog = false; viewModel.clearCoverCandidates() },
-            onDismiss = { showCoverDialog = false; viewModel.clearCoverCandidates() }
+            onDismiss = { showCoverDialog = false; viewModel.clearCoverCandidates() },
+            debug = coverDebug
         )
     }
 

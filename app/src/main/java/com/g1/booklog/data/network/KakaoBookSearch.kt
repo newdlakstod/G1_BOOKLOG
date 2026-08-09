@@ -41,16 +41,12 @@ object KakaoBookSearch {
         .build()
         .create(KakaoBookService::class.java)
 
-    /** 제목으로 국내 도서 표지 썸네일 목록. 키 미설정/실패 시 빈 목록. */
+    /** 제목으로 국내 도서 표지 썸네일 목록. 키 미설정 시 빈 목록. (에러는 호출부에서 처리) */
     suspend fun coverThumbnails(query: String): List<String> {
         if (BooksApiKeys.KAKAO_REST_API_KEY.isBlank() || query.isBlank()) return emptyList()
-        return try {
-            service.search(query = query)
-                .documents.orEmpty()
-                .map { it.thumbnail }
-                .filter { it.isNotBlank() }
-        } catch (_: Exception) {
-            emptyList()
-        }
+        return service.search(query = query)
+            .documents.orEmpty()
+            .map { it.thumbnail }
+            .filter { it.isNotBlank() }
     }
 }
