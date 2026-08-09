@@ -44,9 +44,14 @@ object KakaoBookSearch {
     /** 제목으로 국내 도서 표지 썸네일 목록. 키 미설정 시 빈 목록. (에러는 호출부에서 처리) */
     suspend fun coverThumbnails(query: String): List<String> {
         if (BooksApiKeys.KAKAO_REST_API_KEY.isBlank() || query.isBlank()) return emptyList()
-        return service.search(query = query)
-            .documents.orEmpty()
-            .map { it.thumbnail }
-            .filter { it.isNotBlank() }
+        var docs = service.search(query = query).documents.orEmpty()
+        // 제목에 오탈자 공백("세종 의 나라")이 있으면 0건 → 공백 제거 후 재시도
+        if (docs.isEmpty()) {
+            val collapsed = query.replace(Regex("\\s+"), "")
+            if (collapsed.isNotBlank() && collapsed != query) {
+                docs = service.search(query = collapsed).documents.orEmpty()
+            }
+        }
+        return docs.map { it.thumbnail }.filter { it.isNotBlank() }
     }
 }
