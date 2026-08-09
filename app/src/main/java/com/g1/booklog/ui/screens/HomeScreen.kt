@@ -172,7 +172,8 @@ private fun ReadingPagerCarousel(
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val itemWidth = maxWidth - 160.dp
+            // 넓은 화면(폴더블 펼침·가로)에서 표지가 과하게 커지지 않도록 상한을 둔다
+            val itemWidth = minOf(maxWidth - 160.dp, 240.dp)
             LazyRow(
                 state = listState,
                 flingBehavior = snapFling,

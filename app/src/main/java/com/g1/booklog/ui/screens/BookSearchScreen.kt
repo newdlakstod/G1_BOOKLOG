@@ -162,9 +162,9 @@ fun BookSearchScreen(
                 }
             }
 
-            // 검색 결과 (3열 그리드)
+            // 검색 결과 (화면 폭에 맞춰 열 개수 자동 조절)
             LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
+                columns = GridCells.Adaptive(100.dp),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
