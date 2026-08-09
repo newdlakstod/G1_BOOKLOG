@@ -30,15 +30,14 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/release.keystore
 
-      - name: Create NaverApiKeys.kt
+      - name: Create BooksApiKeys.kt
         env:
-          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
-          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          GOOGLE_BOOKS_API_KEY: ${{ secrets.GOOGLE_BOOKS_API_KEY }}
         run: |
           mkdir -p app/src/main/java/com/g1/booklog/data/network
-          printf 'package com.g1.booklog.data.network\n\nobject NaverApiKeys {\n    const val CLIENT_ID = "%s"\n    const val CLIENT_SECRET = "%s"\n}\n' \
-            "$NAVER_CLIENT_ID" "$NAVER_CLIENT_SECRET" \
-            > app/src/main/java/com/g1/booklog/data/network/NaverApiKeys.kt
+          printf 'package com.g1.booklog.data.network\n\nobject BooksApiKeys {\n    const val GOOGLE_BOOKS_API_KEY = "%s"\n}\n' \
+            "$GOOGLE_BOOKS_API_KEY" \
+            > app/src/main/java/com/g1/booklog/data/network/BooksApiKeys.kt
 
       - name: Grant gradlew permission
         run: chmod +x gradlew

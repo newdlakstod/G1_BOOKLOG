@@ -11,50 +11,75 @@ import retrofit2.http.Query
 private val htmlTagRegex = Regex("<[^>]+>")
 
 data class GoogleBookItem(
-    @SerializedName("title") val titleText: String = "",
-    @SerializedName("author") val authorText: String = "",
-    @SerializedName("publisher") val publisherText: String = "",
-    @SerializedName("pubdate") val pubdate: String = "",
-    @SerializedName("isbn") val isbnText: String = "",
-    @SerializedName("image") val imageUrl: String = "",
-    @SerializedName("description") val descriptionText: String = ""
+    @SerializedName("volumeInfo") val volumeInfo: VolumeInfo = VolumeInfo()
 ) {
-    fun getTitle(): String = titleText.replace(htmlTagRegex, "")
-    fun getAuthor(): String = authorText.replace(htmlTagRegex, "")
-    fun getPublisher(): String = publisherText
-    fun getYear(): Int? = pubdate.take(4).toIntOrNull()
-    fun getIsbn13(): String = isbnText.split(" ").firstOrNull { it.length == 13 } ?: isbnText
-    fun getThumbnail(): String = imageUrl
-    fun getDescription(): String = descriptionText.replace(htmlTagRegex, "")
-    fun getPageCount(): Int? = null
+    fun getTitle(): String = volumeInfo.title
+    fun getAuthor(): String = volumeInfo.authors?.joinToString(", ").orEmpty()
+    fun getPublisher(): String = volumeInfo.publisher
+    fun getYear(): Int? = volumeInfo.publishedDate.take(4).toIntOrNull()
+    fun getIsbn13(): String {
+        val ids = volumeInfo.industryIdentifiers.orEmpty()
+        return ids.firstOrNull { it.type == "ISBN_13" }?.identifier
+            ?: ids.firstOrNull { it.type == "ISBN_10" }?.identifier
+            ?: ""
+    }
+    // Google 썸네일 링크는 종종 http로 오므로 https로 승격 (cleartext 설정 불필요)
+    fun getThumbnail(): String =
+        (volumeInfo.imageLinks?.thumbnail ?: volumeInfo.imageLinks?.smallThumbnail ?: "")
+            .replace("http://", "https://")
+    fun getDescription(): String = volumeInfo.description.replace(htmlTagRegex, "")
+    fun getPageCount(): Int? = volumeInfo.pageCount?.takeIf { it > 0 }
 }
 
+data class VolumeInfo(
+    @SerializedName("title") val title: String = "",
+    @SerializedName("authors") val authors: List<String>? = null,
+    @SerializedName("publisher") val publisher: String = "",
+    @SerializedName("publishedDate") val publishedDate: String = "",
+    @SerializedName("description") val description: String = "",
+    @SerializedName("industryIdentifiers") val industryIdentifiers: List<IndustryIdentifier>? = null,
+    @SerializedName("pageCount") val pageCount: Int? = null,
+    @SerializedName("imageLinks") val imageLinks: ImageLinks? = null
+)
+
+data class IndustryIdentifier(
+    @SerializedName("type") val type: String = "",
+    @SerializedName("identifier") val identifier: String = ""
+)
+
+data class ImageLinks(
+    @SerializedName("smallThumbnail") val smallThumbnail: String? = null,
+    @SerializedName("thumbnail") val thumbnail: String? = null
+)
+
 data class GoogleBooksResponse(
-    @SerializedName("total") val totalItems: Int = 0,
+    @SerializedName("totalItems") val totalItems: Int = 0,
     @SerializedName("items") val items: List<GoogleBookItem>? = null
 )
 
 interface GoogleBooksService {
-    @GET("v1/search/book.json")
+    @GET("books/v1/volumes")
     suspend fun searchBooks(
-        @Query("query") query: String,
-        @Query("display") maxResults: Int = 20,
-        @Query("sort") sort: String = "sim"
+        @Query("q") query: String,
+        @Query("maxResults") maxResults: Int = 20
     ): GoogleBooksResponse
 }
 
 object GoogleBooksApi {
     val service: GoogleBooksService = Retrofit.Builder()
-        .baseUrl("https://openapi.naver.com/")
+        .baseUrl("https://www.googleapis.com/")
         .client(
             OkHttpClient.Builder()
                 .addInterceptor { chain ->
-                    chain.proceed(
-                        chain.request().newBuilder()
-                            .addHeader("X-Naver-Client-Id", NaverApiKeys.CLIENT_ID)
-                            .addHeader("X-Naver-Client-Secret", NaverApiKeys.CLIENT_SECRET)
+                    val req = chain.request()
+                    // API 키가 있으면 쿼리에 붙인다 (Google Books는 키 없이는 할당량 0)
+                    val newReq = if (BooksApiKeys.GOOGLE_BOOKS_API_KEY.isNotBlank()) {
+                        val url = req.url.newBuilder()
+                            .addQueryParameter("key", BooksApiKeys.GOOGLE_BOOKS_API_KEY)
                             .build()
-                    )
+                        req.newBuilder().url(url).build()
+                    } else req
+                    chain.proceed(newReq)
                 }
                 .addInterceptor(HttpLoggingInterceptor().apply {
                     level = if (com.g1.booklog.BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC else HttpLoggingInterceptor.Level.NONE

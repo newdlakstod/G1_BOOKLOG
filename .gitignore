@@ -18,8 +18,8 @@ local.properties
 # Google Services (contains API keys — add manually or via secrets)
 app/google-services.json
 
-# Naver API Keys (contains sensitive credentials)
-app/src/main/java/com/g1/booklog/data/network/NaverApiKeys.kt
+# Books API Keys (contains sensitive credentials)
+app/src/main/java/com/g1/booklog/data/network/BooksApiKeys.kt
 
 # Keystore files
 *.jks
