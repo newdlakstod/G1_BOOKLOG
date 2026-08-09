@@ -9,6 +9,7 @@ import com.g1.booklog.data.model.ReadingRecord
 import com.g1.booklog.data.model.ReadingStatus
 import com.g1.booklog.data.network.GoogleBookItem
 import com.g1.booklog.data.network.GoogleBooksApi
+import com.g1.booklog.data.network.OpenLibrary
 import com.g1.booklog.data.repository.BookRepository
 import com.g1.booklog.data.repository.FirebaseRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -124,6 +125,31 @@ class BookViewModel(
         _naverResults.value = emptyList()
         _naverError.value = null
     }
+
+    // 표지만 따로 검색 (Google Books 판본 표지 + Open Library ISBN 표지)
+    private val _coverCandidates = MutableStateFlow<List<String>>(emptyList())
+    val coverCandidates: StateFlow<List<String>> = _coverCandidates.asStateFlow()
+
+    private val _coverSearching = MutableStateFlow(false)
+    val coverSearching: StateFlow<Boolean> = _coverSearching.asStateFlow()
+
+    fun searchCovers(title: String, isbn: String) = viewModelScope.launch {
+        _coverSearching.value = true
+        val urls = LinkedHashSet<String>()
+        val query = if (title.isNotBlank()) title.trim() else if (isbn.isNotBlank()) "isbn:$isbn" else ""
+        if (query.isNotBlank()) {
+            try {
+                GoogleBooksApi.service.searchBooks(query = query).items.orEmpty().forEach { item ->
+                    item.getThumbnail().takeIf { it.isNotBlank() }?.let { urls.add(it) }
+                }
+            } catch (_: Exception) { /* 표지 검색 실패는 무시 */ }
+        }
+        OpenLibrary.coverUrlForIsbn(isbn.trim())?.let { urls.add(it) }
+        _coverCandidates.value = urls.toList()
+        _coverSearching.value = false
+    }
+
+    fun clearCoverCandidates() { _coverCandidates.value = emptyList() }
 
     fun getBookById(id: Long): Flow<Book?> = repository.getBookById(id)
     fun getRecordsByBook(bookId: Long): Flow<List<ReadingRecord>> = repository.getRecordsByBook(bookId)

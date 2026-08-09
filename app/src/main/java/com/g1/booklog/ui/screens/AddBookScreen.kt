@@ -1,6 +1,10 @@
 package com.g1.booklog.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -8,12 +12,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.g1.booklog.data.model.Book
 import com.g1.booklog.data.model.BookGenre
 import com.g1.booklog.data.model.ReadingStatus
@@ -87,6 +96,20 @@ fun BookFormScreen(
 
     var genreExpanded by remember { mutableStateOf(false) }
     var statusExpanded by remember { mutableStateOf(false) }
+
+    // 표지 검색 다이얼로그
+    var showCoverDialog by remember { mutableStateOf(false) }
+    val coverCandidates by viewModel.coverCandidates.collectAsState()
+    val coverSearching by viewModel.coverSearching.collectAsState()
+
+    if (showCoverDialog) {
+        CoverPickerDialog(
+            candidates = coverCandidates,
+            loading = coverSearching,
+            onPick = { coverImageUrl = it; showCoverDialog = false; viewModel.clearCoverCandidates() },
+            onDismiss = { showCoverDialog = false; viewModel.clearCoverCandidates() }
+        )
+    }
 
     // 네이버 검색에서 선택한 책으로 자동 채우기
     val selectedNaverBook by viewModel.selectedNaverBook.collectAsState()
@@ -173,6 +196,45 @@ fun BookFormScreen(
                     Icon(Icons.Default.Search, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("책 검색하기")
+                }
+            }
+
+            // 표지 미리보기 + 표지 검색
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                val coverModifier = Modifier
+                    .width(88.dp)
+                    .aspectRatio(0.7f)
+                    .clip(RoundedCornerShape(8.dp))
+                if (coverImageUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = coverImageUrl,
+                        contentDescription = "표지",
+                        modifier = coverModifier,
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    BookCoverPlaceholder(title = bookTitle, modifier = coverModifier)
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { viewModel.searchCovers(bookTitle, isbn); showCoverDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Image, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("표지 검색")
+                    }
+                    OutlinedTextField(
+                        value = coverImageUrl,
+                        onValueChange = { coverImageUrl = it },
+                        label = { Text("표지 URL") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
                 }
             }
 
@@ -298,4 +360,51 @@ fun BookFormScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
+}
+
+@Composable
+private fun CoverPickerDialog(
+    candidates: List<String>,
+    loading: Boolean,
+    onPick: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("표지 선택") },
+        text = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(320.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    loading -> CircularProgressIndicator()
+                    candidates.isEmpty() -> Text("표지를 찾지 못했어요. URL을 직접 입력해 주세요.")
+                    else -> LazyVerticalGrid(
+                        columns = GridCells.Adaptive(90.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(candidates) { url ->
+                            AsyncImage(
+                                model = url,
+                                contentDescription = "표지 후보",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .aspectRatio(0.7f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { onPick(url) }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("닫기") }
+        }
+    )
 }
