@@ -85,6 +85,19 @@ fun BookDetailScreen(
         }
     }
 
+    // 표지 검색 다이얼로그 (표지 없을 때 상세에서 붙이기)
+    var showCoverDialog by remember { mutableStateOf(false) }
+    val coverCandidates by viewModel.coverCandidates.collectAsState()
+    val coverSearching by viewModel.coverSearching.collectAsState()
+    if (showCoverDialog) {
+        CoverPickerDialog(
+            candidates = coverCandidates,
+            loading = coverSearching,
+            onPick = { draft = book.copy(coverImageUrl = it); showCoverDialog = false; viewModel.clearCoverCandidates() },
+            onDismiss = { showCoverDialog = false; viewModel.clearCoverCandidates() }
+        )
+    }
+
     Scaffold(
         snackbarHost = { BookLogSnackbarHost(snackbarHostState) },
         topBar = {
@@ -110,7 +123,13 @@ fun BookDetailScreen(
                 .imePadding()
                 .verticalScroll(rememberScrollState())
         ) {
-            BookHeader(book = book)
+            BookHeader(
+                book = book,
+                onSearchCover = {
+                    viewModel.searchCovers(book.title, book.isbn)
+                    showCoverDialog = true
+                }
+            )
 
             StatusSection(
                 book = book,
@@ -164,7 +183,7 @@ private fun todayEndMillis(): Long = Calendar.getInstance().apply {
 }.timeInMillis
 
 @Composable
-private fun BookHeader(book: Book) {
+private fun BookHeader(book: Book, onSearchCover: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -182,12 +201,20 @@ private fun BookHeader(book: Book) {
                 contentScale = ContentScale.Crop
             )
         } else {
-            BookCoverPlaceholder(
-                title = book.title,
-                modifier = Modifier
-                    .size(100.dp, 140.dp)
-                    .shadow(elevation = 10.dp, shape = RoundedCornerShape(10.dp))
-            )
+            // 표지 없을 때만: 플레이스홀더 + 표지 검색
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                BookCoverPlaceholder(
+                    title = book.title,
+                    modifier = Modifier
+                        .size(100.dp, 140.dp)
+                        .shadow(elevation = 10.dp, shape = RoundedCornerShape(10.dp))
+                )
+                TextButton(onClick = onSearchCover) {
+                    Icon(Icons.Default.Image, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("표지 검색")
+                }
+            }
         }
         Column(
             modifier = Modifier.weight(1f),

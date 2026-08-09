@@ -363,7 +363,7 @@ fun BookFormScreen(
 }
 
 @Composable
-private fun CoverPickerDialog(
+fun CoverPickerDialog(
     candidates: List<String>,
     loading: Boolean,
     onPick: (String) -> Unit,

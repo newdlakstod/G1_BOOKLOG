@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -49,8 +50,9 @@ fun BookSearchScreen(
     pendingItem?.let { item ->
         StatusPickerDialog(
             item = item,
-            onConfirm = { status ->
-                viewModel.addBookFromSearch(item, status)
+            viewModel = viewModel,
+            onConfirm = { status, cover ->
+                viewModel.addBookFromSearch(item, status, cover)
                 viewModel.clearNaverSearch()
                 pendingItem = null
                 onBookSelected()
@@ -187,10 +189,24 @@ fun BookSearchScreen(
 @Composable
 private fun StatusPickerDialog(
     item: GoogleBookItem,
-    onConfirm: (ReadingStatus) -> Unit,
+    viewModel: BookViewModel,
+    onConfirm: (ReadingStatus, String) -> Unit,
     onDismiss: () -> Unit
 ) {
     var selectedStatus by remember { mutableStateOf(ReadingStatus.WANT_TO_READ) }
+    var coverUrl by remember { mutableStateOf(item.getThumbnail()) }
+
+    var showCoverDialog by remember { mutableStateOf(false) }
+    val coverCandidates by viewModel.coverCandidates.collectAsState()
+    val coverSearching by viewModel.coverSearching.collectAsState()
+    if (showCoverDialog) {
+        CoverPickerDialog(
+            candidates = coverCandidates,
+            loading = coverSearching,
+            onPick = { coverUrl = it; showCoverDialog = false; viewModel.clearCoverCandidates() },
+            onDismiss = { showCoverDialog = false; viewModel.clearCoverCandidates() }
+        )
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -204,6 +220,30 @@ private fun StatusPickerDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                // 표지가 없을 때만 표지 추가 UI 노출 (있으면 그대로 둠)
+                if (coverUrl.isBlank()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        BookCoverPlaceholder(
+                            title = item.getTitle(),
+                            modifier = Modifier
+                                .width(48.dp)
+                                .aspectRatio(0.7f)
+                                .clip(RoundedCornerShape(6.dp))
+                        )
+                        OutlinedButton(onClick = {
+                            viewModel.searchCovers(item.getTitle(), item.getIsbn13())
+                            showCoverDialog = true
+                        }) {
+                            Icon(Icons.Default.Image, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("표지 검색")
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
                 Text(
                     text = "독서 상태를 선택해주세요",
                     style = MaterialTheme.typography.bodySmall,
@@ -229,7 +269,7 @@ private fun StatusPickerDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { onConfirm(selectedStatus) }) {
+            Button(onClick = { onConfirm(selectedStatus, coverUrl) }) {
                 Text("추가")
             }
         },
