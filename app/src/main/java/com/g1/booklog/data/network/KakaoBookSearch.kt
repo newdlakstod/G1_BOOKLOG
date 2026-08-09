@@ -1,6 +1,7 @@
 package com.g1.booklog.data.network
 
 import com.google.gson.annotations.SerializedName
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -52,6 +53,12 @@ object KakaoBookSearch {
                 docs = service.search(query = collapsed).documents.orEmpty()
             }
         }
-        return docs.map { it.thumbnail }.filter { it.isNotBlank() }
+        return docs.map { hiRes(it.thumbnail) }.filter { it.isNotBlank() }
+    }
+
+    // 카카오 썸네일(R120x174)은 화질이 낮음 → URL 안의 원본 이미지(fname)를 꺼내 https 고화질로.
+    private fun hiRes(thumbnail: String): String {
+        val original = thumbnail.toHttpUrlOrNull()?.queryParameter("fname")
+        return (original ?: thumbnail).replace("http://", "https://")
     }
 }
