@@ -9,6 +9,7 @@ import com.g1.booklog.data.model.ReadingRecord
 import com.g1.booklog.data.model.ReadingStatus
 import com.g1.booklog.data.network.GoogleBookItem
 import com.g1.booklog.data.network.GoogleBooksApi
+import com.g1.booklog.data.network.GoogleImageSearch
 import com.g1.booklog.data.network.OpenLibrary
 import com.g1.booklog.data.repository.BookRepository
 import com.g1.booklog.data.repository.FirebaseRepository
@@ -146,6 +147,7 @@ class BookViewModel(
         }
         OpenLibrary.coverUrlForIsbn(isbn.trim())?.let { urls.add(it) }
         if (title.isNotBlank()) urls.addAll(OpenLibrary.coverUrlsByTitle(title.trim()))
+        if (title.isNotBlank()) urls.addAll(GoogleImageSearch.coverImageUrls("${title.trim()} 책 표지"))
         _coverCandidates.value = urls.toList()
         _coverSearching.value = false
     }
