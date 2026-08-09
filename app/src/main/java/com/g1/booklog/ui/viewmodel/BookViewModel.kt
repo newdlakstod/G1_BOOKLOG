@@ -145,6 +145,7 @@ class BookViewModel(
             } catch (_: Exception) { /* 표지 검색 실패는 무시 */ }
         }
         OpenLibrary.coverUrlForIsbn(isbn.trim())?.let { urls.add(it) }
+        if (title.isNotBlank()) urls.addAll(OpenLibrary.coverUrlsByTitle(title.trim()))
         _coverCandidates.value = urls.toList()
         _coverSearching.value = false
     }
