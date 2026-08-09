@@ -34,10 +34,11 @@ jobs:
         env:
           GOOGLE_BOOKS_API_KEY: ${{ secrets.GOOGLE_BOOKS_API_KEY }}
           GOOGLE_CSE_ID: ${{ secrets.GOOGLE_CSE_ID }}
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
         run: |
           mkdir -p app/src/main/java/com/g1/booklog/data/network
-          printf 'package com.g1.booklog.data.network\n\nobject BooksApiKeys {\n    const val GOOGLE_BOOKS_API_KEY = "%s"\n    const val GOOGLE_CSE_ID = "%s"\n}\n' \
-            "$GOOGLE_BOOKS_API_KEY" "$GOOGLE_CSE_ID" \
+          printf 'package com.g1.booklog.data.network\n\nobject BooksApiKeys {\n    const val GOOGLE_BOOKS_API_KEY = "%s"\n    const val GOOGLE_CSE_ID = "%s"\n    const val KAKAO_REST_API_KEY = "%s"\n}\n' \
+            "$GOOGLE_BOOKS_API_KEY" "$GOOGLE_CSE_ID" "$KAKAO_REST_API_KEY" \
             > app/src/main/java/com/g1/booklog/data/network/BooksApiKeys.kt
 
       - name: Grant gradlew permission
