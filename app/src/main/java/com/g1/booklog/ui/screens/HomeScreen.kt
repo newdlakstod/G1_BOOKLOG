@@ -220,7 +220,7 @@ private fun ReadingPagerCarousel(
                                 modifier = Modifier.fillMaxWidth().aspectRatio(0.67f)
                             )
                         }
-                        if (book.totalPages != null && book.totalPages > 0) {
+                        if (book.status == ReadingStatus.READING && book.totalPages != null && book.totalPages > 0 && book.currentPage > 0) {
                             val progress = (book.currentPage.toFloat() / book.totalPages).coerceIn(0f, 1f)
                             Box(
                                 modifier = Modifier
