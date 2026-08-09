@@ -8,8 +8,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 
-private val htmlTagRegex = Regex("<[^>]+>")
-
 data class GoogleBookItem(
     @SerializedName("volumeInfo") val volumeInfo: VolumeInfo = VolumeInfo()
 ) {
@@ -27,7 +25,6 @@ data class GoogleBookItem(
     fun getThumbnail(): String =
         (volumeInfo.imageLinks?.thumbnail ?: volumeInfo.imageLinks?.smallThumbnail ?: "")
             .replace("http://", "https://")
-    fun getDescription(): String = volumeInfo.description.replace(htmlTagRegex, "")
     fun getPageCount(): Int? = volumeInfo.pageCount?.takeIf { it > 0 }
 }
 
@@ -36,7 +33,6 @@ data class VolumeInfo(
     @SerializedName("authors") val authors: List<String>? = null,
     @SerializedName("publisher") val publisher: String = "",
     @SerializedName("publishedDate") val publishedDate: String = "",
-    @SerializedName("description") val description: String = "",
     @SerializedName("industryIdentifiers") val industryIdentifiers: List<IndustryIdentifier>? = null,
     @SerializedName("pageCount") val pageCount: Int? = null,
     @SerializedName("imageLinks") val imageLinks: ImageLinks? = null
@@ -53,7 +49,6 @@ data class ImageLinks(
 )
 
 data class GoogleBooksResponse(
-    @SerializedName("totalItems") val totalItems: Int = 0,
     @SerializedName("items") val items: List<GoogleBookItem>? = null
 )
 
