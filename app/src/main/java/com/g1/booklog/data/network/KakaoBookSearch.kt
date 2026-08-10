@@ -13,6 +13,12 @@ data class KakaoBookResponse(
 )
 
 data class KakaoBook(
+    @SerializedName("title") val title: String = "",
+    @SerializedName("authors") val authors: List<String>? = null,
+    @SerializedName("publisher") val publisher: String = "",
+    @SerializedName("datetime") val datetime: String = "",
+    // "ISBN10 ISBN13" 공백 구분 (둘 중 하나만 올 수도 있음)
+    @SerializedName("isbn") val isbn: String = "",
     @SerializedName("thumbnail") val thumbnail: String = ""
 )
 
@@ -42,18 +48,44 @@ object KakaoBookSearch {
         .build()
         .create(KakaoBookService::class.java)
 
+    /** 제목/저자로 국내 도서 검색. 결과를 GoogleBookItem 형태로 변환해 UI 재사용. 키 미설정 시 빈 목록. */
+    suspend fun searchBooks(query: String): List<GoogleBookItem> =
+        documentsFor(query).map { it.toGoogleBookItem() }
+
     /** 제목으로 국내 도서 표지 썸네일 목록. 키 미설정 시 빈 목록. (에러는 호출부에서 처리) */
-    suspend fun coverThumbnails(query: String): List<String> {
+    suspend fun coverThumbnails(query: String): List<String> =
+        documentsFor(query).map { hiRes(it.thumbnail) }.filter { it.isNotBlank() }
+
+    private suspend fun documentsFor(query: String): List<KakaoBook> {
         if (BooksApiKeys.KAKAO_REST_API_KEY.isBlank() || query.isBlank()) return emptyList()
-        var docs = service.search(query = query).documents.orEmpty()
+        val docs = service.search(query = query).documents.orEmpty()
         // 제목에 오탈자 공백("세종 의 나라")이 있으면 0건 → 공백 제거 후 재시도
         if (docs.isEmpty()) {
             val collapsed = query.replace(Regex("\\s+"), "")
             if (collapsed.isNotBlank() && collapsed != query) {
-                docs = service.search(query = collapsed).documents.orEmpty()
+                return service.search(query = collapsed).documents.orEmpty()
             }
         }
-        return docs.map { hiRes(it.thumbnail) }.filter { it.isNotBlank() }
+        return docs
+    }
+
+    private fun KakaoBook.toGoogleBookItem(): GoogleBookItem {
+        val ids = isbn.split(" ").filter { it.isNotBlank() }.map { code ->
+            IndustryIdentifier(
+                type = if (code.length == 13) "ISBN_13" else "ISBN_10",
+                identifier = code
+            )
+        }
+        return GoogleBookItem(
+            VolumeInfo(
+                title = title,
+                authors = authors,
+                publisher = publisher,
+                publishedDate = datetime,   // "2008-05-30T..." → getYear()가 앞 4자리 사용
+                industryIdentifiers = ids,
+                imageLinks = ImageLinks(thumbnail = hiRes(thumbnail))
+            )
+        )
     }
 
     // 카카오 썸네일(R120x174)은 화질이 낮음 → URL 안의 원본 이미지(fname)를 꺼내 https 고화질로.

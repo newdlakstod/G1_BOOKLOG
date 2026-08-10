@@ -110,8 +110,11 @@ class BookViewModel(
         _naverSearching.value = true
         _naverError.value = null
         try {
-            val response = GoogleBooksApi.service.searchBooks(query = query.trim())
-            val items = response.items ?: emptyList()
+            // 국내서 커버리지가 좋은 카카오를 우선, 결과 없으면 Google Books로 폴백
+            val kakao = try { KakaoBookSearch.searchBooks(query.trim()) } catch (_: Exception) { emptyList() }
+            val items = kakao.ifEmpty {
+                GoogleBooksApi.service.searchBooks(query = query.trim()).items ?: emptyList()
+            }
             _naverResults.value = items
             if (items.isEmpty()) _naverError.value = "검색 결과가 없습니다"
         } catch (e: Exception) {
